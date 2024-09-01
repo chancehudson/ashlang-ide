@@ -1,0 +1,13 @@
+[package]
+name = "ashlang-ide"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eframe = { version = "0.28.1", features = ["default", "__screenshot"] }
+egui_extras = { version = "0.28.1", features = ["default", "image"] }
+env_logger = { version = "0.11.5", default-features = false, features = ["auto-color", "humantime"] }
+
+ashlang = { path = "../ashlang" }
+scalarff = "0.1.1"
+anyhow = "1.0.86"

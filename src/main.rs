@@ -174,9 +174,9 @@ fn render_build_options(ide: &mut IDE, ui: &mut egui::Ui) {
 }
 
 fn render_build_info(ide: &mut IDE, ui: &mut egui::Ui) {
-    ui.horizontal(|ui| {
-        ui.label(&ide.compile_result);
+    ui.horizontal_top(|ui| {
+        ui.colored_label(egui::Color32::WHITE, &ide.compile_result);
         ui.add(egui::Separator::default());
-        ui.label(&ide.compile_output);
+        ui.colored_label(egui::Color32::WHITE, &ide.compile_output);
     });
 }

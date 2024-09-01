@@ -135,15 +135,20 @@ impl eframe::App for IDE {
                         }
                     });
                     // TODO: use layouter to implement syntax highlighting
-                    let editor = egui::TextEdit::multiline(&mut self.source);
-                    let size =
-                        egui::Vec2::new(ui.available_width(), ctx.screen_rect().height() - 200_f32);
-                    let editor = ui.add_sized(size, editor);
-                    if editor.changed() {
-                        self.compile_generic();
-                    }
+                    ui.vertical(|ui| {
+                        let editor = egui::TextEdit::multiline(&mut self.source);
+                        let size = egui::Vec2::new(
+                            ui.available_width(),
+                            ctx.screen_rect().height() - 200_f32,
+                        );
+                        let editor = ui.add_sized(size, editor);
+                        if editor.changed() {
+                            self.compile_generic();
+                        }
+                        render_build_options(self, ui);
+                    });
                 });
-                render_build_options(self, ui);
+                // render_build_options(self, ui);
                 render_build_info(self, ui);
             });
         });
@@ -152,7 +157,7 @@ impl eframe::App for IDE {
 
 fn render_build_options(ide: &mut IDE, ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
-        egui::ComboBox::from_label("")
+        egui::ComboBox::new("scalar_field_selector", "")
             .selected_text(format!("Scalar Field: {}", ide.field))
             .show_ui(ui, |ui| {
                 if ui
@@ -168,7 +173,7 @@ fn render_build_options(ide: &mut IDE, ui: &mut egui::Ui) {
                     ide.compile_generic();
                 }
             });
-        egui::ComboBox::from_label(" ")
+        egui::ComboBox::new("target_selector", "")
             .selected_text(format!("Target: {}", ide.target))
             .show_ui(ui, |ui| {
                 if ui
@@ -186,8 +191,22 @@ fn render_build_options(ide: &mut IDE, ui: &mut egui::Ui) {
 
 fn render_build_info(ide: &mut IDE, ui: &mut egui::Ui) {
     ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
-        ui.colored_label(egui::Color32::WHITE, &ide.compile_result);
+        ui.vertical(|ui| {
+            ui.heading("Compile status");
+            egui::ScrollArea::vertical()
+                .id_source("compile_status_scroll")
+                .show(ui, |ui| {
+                    ui.colored_label(egui::Color32::WHITE, &ide.compile_result);
+                });
+        });
         ui.add(egui::Separator::default());
-        ui.colored_label(egui::Color32::WHITE, &ide.compile_output);
+        ui.vertical(|ui| {
+            ui.heading("Compile output");
+            egui::ScrollArea::vertical()
+                .id_source("compile_output_scroll")
+                .show(ui, |ui| {
+                    ui.colored_label(egui::Color32::WHITE, &ide.compile_output);
+                });
+        });
     });
 }

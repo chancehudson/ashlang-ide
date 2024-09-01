@@ -1,17 +1,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 #![allow(rustdoc::missing_crate_level_docs)] // it's an example
 
-use std::sync::Arc;
-use std::sync::RwLock;
-use std::thread;
-
-use anyhow::Result;
+use ashlang::compiler::Compiler;
 use ashlang::r1cs::witness;
 use ashlang::Config;
-use ashlang::{compiler::Compiler, r1cs::constraint};
 use eframe::egui;
+use scalarff::Bn128FieldElement;
+use scalarff::Curve25519FieldElement;
 use scalarff::FieldElement;
-use scalarff::{Bn128FieldElement, Curve25519FieldElement, FoiFieldElement};
+use scalarff::FoiFieldElement;
 
 fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
@@ -123,34 +120,34 @@ let _ = x + y
 impl eframe::App for IDE {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            // ui.horizontal(|ui| {
             let editor = egui::TextEdit::multiline(&mut self.source);
-            // let editor = ui.add_sized(ui.available_size(), editor);
-            let editor = ui.add(editor);
+            let size = egui::Vec2::new(ui.available_width(), ui.available_height() - 300_f32);
+            let editor = ui.add_sized(size, editor);
             if editor.changed() {
                 self.compile_generic();
             }
-            // });
-            egui::ComboBox::from_label("")
-                .selected_text(format!("Scalar Field: {}", self.field))
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut self.field, "curve25519".to_string(), "curve25519");
-                    ui.selectable_value(&mut self.field, "alt_bn128".to_string(), "alt_bn128");
-                    ui.selectable_value(&mut self.field, "oxfoi".to_string(), "oxfoi");
-                });
-            ui.horizontal(|ui| {
-                ui.label(&self.compile_result);
-                ui.add(egui::Separator::default());
-                ui.label(&self.compile_output);
-            });
-
-            // ui.add(egui::Slider::new(&mut self.age, 0..=120).text("age"));
-            // if ui.button("Increment").clicked() {
-            //     self.age += 1;
-            // }
-            // ui.label(format!("Hello '{}', age {}", self.name, self.age));
-
-            // ui.image(egui::include_image!("../static/clouds.png"));
+            render_build_options(self, ui);
+            render_build_info(self, ui);
         });
     }
+}
+
+fn render_build_options(ide: &mut IDE, ui: &mut egui::Ui) {
+    ui.horizontal(|ui| {
+        egui::ComboBox::from_label("")
+            .selected_text(format!("Scalar Field: {}", ide.field))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(&mut ide.field, "curve25519".to_string(), "curve25519");
+                ui.selectable_value(&mut ide.field, "alt_bn128".to_string(), "alt_bn128");
+                ui.selectable_value(&mut ide.field, "oxfoi".to_string(), "oxfoi");
+            });
+    });
+}
+
+fn render_build_info(ide: &mut IDE, ui: &mut egui::Ui) {
+    ui.horizontal(|ui| {
+        ui.label(&ide.compile_result);
+        ui.add(egui::Separator::default());
+        ui.label(&ide.compile_output);
+    });
 }

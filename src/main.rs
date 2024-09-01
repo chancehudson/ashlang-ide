@@ -127,14 +127,25 @@ let _ = x + y
 impl eframe::App for IDE {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            let editor = egui::TextEdit::multiline(&mut self.source);
-            let size = egui::Vec2::new(ui.available_width(), ui.available_height() - 300_f32);
-            let editor = ui.add_sized(size, editor);
-            if editor.changed() {
-                self.compile_generic();
-            }
-            render_build_options(self, ui);
-            render_build_info(self, ui);
+            ui.with_layout(egui::Layout::top_down(egui::Align::LEFT), |ui| {
+                ui.horizontal(|ui| {
+                    ui.vertical(|ui| {
+                        for i in 0..10 {
+                            ui.label(&format!("ahfjksahfsakhf {i}"));
+                        }
+                    });
+                    // TODO: use layouter to implement syntax highlighting
+                    let editor = egui::TextEdit::multiline(&mut self.source);
+                    let size =
+                        egui::Vec2::new(ui.available_width(), ctx.screen_rect().height() - 200_f32);
+                    let editor = ui.add_sized(size, editor);
+                    if editor.changed() {
+                        self.compile_generic();
+                    }
+                });
+                render_build_options(self, ui);
+                render_build_info(self, ui);
+            });
         });
     }
 }
@@ -174,7 +185,7 @@ fn render_build_options(ide: &mut IDE, ui: &mut egui::Ui) {
 }
 
 fn render_build_info(ide: &mut IDE, ui: &mut egui::Ui) {
-    ui.horizontal_top(|ui| {
+    ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
         ui.colored_label(egui::Color32::WHITE, &ide.compile_result);
         ui.add(egui::Separator::default());
         ui.colored_label(egui::Color32::WHITE, &ide.compile_output);

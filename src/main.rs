@@ -10,12 +10,13 @@ use ashlang::r1cs::witness;
 use ashlang::Config;
 use ashlang::{compiler::Compiler, r1cs::constraint};
 use eframe::egui;
+use scalarff::FieldElement;
 use scalarff::{Bn128FieldElement, Curve25519FieldElement, FoiFieldElement};
 
 fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
+        viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 800.0]),
         ..Default::default()
     };
     eframe::run_native(
@@ -34,11 +35,23 @@ struct IDE {
     target: String, // "tasm" or "r1cs"
     field: String,  // "curve25519" or "foi" or "alt_bn128"
     compile_result: String,
+    compile_output: String,
     source: String, // the source code being edited
 }
 
 impl IDE {
-    fn compile(&mut self) {
+    fn compile_generic(&mut self) {
+        match self.field.as_str() {
+            "oxfoi" => {
+                self.compile::<FoiFieldElement>();
+            }
+            "curve25519" => self.compile::<Curve25519FieldElement>(),
+            "alt_bn128" => self.compile::<Bn128FieldElement>(),
+            _ => unreachable!(),
+        }
+    }
+
+    fn compile<T: FieldElement>(&mut self) {
         let compiler = Compiler::new(&Config {
             include_paths: vec![],
             verbosity: 0,
@@ -53,24 +66,31 @@ impl IDE {
             self.compile_result = format!("Failed to create compiler: {:?}", e);
             return;
         }
-        let mut compiler: Compiler<Curve25519FieldElement> = compiler.unwrap();
+        let mut compiler: Compiler<T> = compiler.unwrap();
         let constraints = compiler.compile_str(&self.source);
         if let Err(e) = constraints {
             self.compile_result = format!("Failed to compile ar1cs: {:?}", e);
+            self.compile_output = "".to_string();
             return;
         }
         let constraints = constraints.unwrap();
-        let witness = witness::build::<Curve25519FieldElement>(&constraints);
+        let witness = witness::build::<T>(&constraints);
         if let Err(e) = witness {
             self.compile_result = format!("Failed to build witness: {:?}", e);
+            self.compile_output = "".to_string();
             return;
         }
         let witness = witness.unwrap();
 
-        if let Err(e) = witness::verify::<Curve25519FieldElement>(&constraints, witness) {
+        if let Err(e) = witness::verify::<T>(&constraints, witness) {
             self.compile_result = format!("Failed to solve r1cs: {:?}", e);
+            self.compile_output = "".to_string();
         } else {
-            self.compile_result = format!("R1CS: built and validated witness ✅");
+            self.compile_result = format!(
+                "Compiling for field {}...\nR1CS: built and validated witness ✅",
+                self.field
+            );
+            self.compile_output = constraints.to_string();
         }
         // // produce a tiny instance
         // let config = transform_r1cs(&out);
@@ -84,24 +104,45 @@ impl IDE {
 
 impl Default for IDE {
     fn default() -> Self {
-        Self {
+        let mut s = Self {
             target: "r1cs".to_string(),
-            source: "let x = 0\nlet y = 1\nlet _ = x + y\n".to_string(),
+            source: "let x = 0
+let y = 1
+let _ = x + y
+"
+            .to_string(),
             compile_result: "".to_string(),
+            compile_output: "".to_string(),
             field: "curve25519".to_string(),
-        }
+        };
+        s.compile_generic();
+        s
     }
 }
 
 impl eframe::App for IDE {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
+            // ui.horizontal(|ui| {
+            let editor = egui::TextEdit::multiline(&mut self.source);
+            // let editor = ui.add_sized(ui.available_size(), editor);
+            let editor = ui.add(editor);
+            if editor.changed() {
+                self.compile_generic();
+            }
+            // });
+            egui::ComboBox::from_label("")
+                .selected_text(format!("Scalar Field: {}", self.field))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut self.field, "curve25519".to_string(), "curve25519");
+                    ui.selectable_value(&mut self.field, "alt_bn128".to_string(), "alt_bn128");
+                    ui.selectable_value(&mut self.field, "oxfoi".to_string(), "oxfoi");
+                });
             ui.horizontal(|ui| {
-                if ui.text_edit_multiline(&mut self.source).changed() {
-                    self.compile();
-                }
+                ui.label(&self.compile_result);
+                ui.add(egui::Separator::default());
+                ui.label(&self.compile_output);
             });
-            ui.horizontal(|ui| ui.label(&self.compile_result));
 
             // ui.add(egui::Slider::new(&mut self.age, 0..=120).text("age"));
             // if ui.button("Increment").clicked() {

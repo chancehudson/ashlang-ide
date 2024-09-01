@@ -1,6 +1,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 #![allow(rustdoc::missing_crate_level_docs)] // it's an example
 
+use std::sync::Arc;
+use std::sync::RwLock;
+use std::thread;
+
 use anyhow::Result;
 use ashlang::r1cs::witness;
 use ashlang::Config;
@@ -92,11 +96,13 @@ impl Default for IDE {
 impl eframe::App for IDE {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
-                self.compile();
-            }
-            ui.horizontal(|ui| ui.text_edit_multiline(&mut self.source));
+            ui.horizontal(|ui| {
+                if ui.text_edit_multiline(&mut self.source).changed() {
+                    self.compile();
+                }
+            });
             ui.horizontal(|ui| ui.label(&self.compile_result));
+
             // ui.add(egui::Slider::new(&mut self.age, 0..=120).text("age"));
             // if ui.button("Increment").clicked() {
             //     self.age += 1;

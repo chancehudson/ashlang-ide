@@ -38,10 +38,14 @@ struct IDE {
 
 impl IDE {
     fn compile_generic(&mut self) {
+        if self.target == "tasm" && self.field != "oxfoi" {
+            self.compile_result = "tasm target must be compiled to the oxfoi field".to_string();
+            self.compile_output = "".to_string();
+            return;
+        }
+        // otherwise we're compiling for r1cs
         match self.field.as_str() {
-            "oxfoi" => {
-                self.compile::<FoiFieldElement>();
-            }
+            "oxfoi" => self.compile::<FoiFieldElement>(),
             "curve25519" => self.compile::<Curve25519FieldElement>(),
             "alt_bn128" => self.compile::<Bn128FieldElement>(),
             _ => unreachable!(),
@@ -64,38 +68,41 @@ impl IDE {
             return;
         }
         let mut compiler: Compiler<T> = compiler.unwrap();
-        let constraints = compiler.compile_str(&self.source);
-        if let Err(e) = constraints {
+        let program = compiler.compile_str(&self.source);
+        if let Err(e) = program {
             self.compile_result = format!("Failed to compile ar1cs: {:?}", e);
             self.compile_output = "".to_string();
             return;
         }
-        let constraints = constraints.unwrap();
-        let witness = witness::build::<T>(&constraints);
-        if let Err(e) = witness {
-            self.compile_result = format!("Failed to build witness: {:?}", e);
-            self.compile_output = "".to_string();
-            return;
-        }
-        let witness = witness.unwrap();
+        let program = program.unwrap();
+        match self.target.as_str() {
+            "r1cs" => {
+                // build a witness and validate it if we're compiling for r1cs
+                let witness = witness::build::<T>(&program);
+                if let Err(e) = witness {
+                    self.compile_result = format!("Failed to build witness: {:?}", e);
+                    self.compile_output = "".to_string();
+                    return;
+                }
+                let witness = witness.unwrap();
 
-        if let Err(e) = witness::verify::<T>(&constraints, witness) {
-            self.compile_result = format!("Failed to solve r1cs: {:?}", e);
-            self.compile_output = "".to_string();
-        } else {
-            self.compile_result = format!(
-                "Compiling for field {}...\nR1CS: built and validated witness ✅",
-                self.field
-            );
-            self.compile_output = constraints.to_string();
+                if let Err(e) = witness::verify::<T>(&program, witness) {
+                    self.compile_result = format!("Failed to solve r1cs: {:?}", e);
+                    self.compile_output = "".to_string();
+                } else {
+                    self.compile_result = format!(
+                        "Compiling for field {}...\nR1CS: built and validated witness ✅",
+                        self.field
+                    );
+                    self.compile_output = program.to_string();
+                }
+            }
+            "tasm" => {
+                self.compile_result = format!("Compiled program to tasm source");
+                self.compile_output = program.to_string();
+            }
+            _ => unreachable!(),
         }
-        // // produce a tiny instance
-        // let config = transform_r1cs(&out);
-        // let spartan_proof = prove(config);
-
-        // let valid = verify(spartan_proof);
-        // assert!(valid);
-        // println!("proof verification successful!");
     }
 }
 
@@ -137,9 +144,31 @@ fn render_build_options(ide: &mut IDE, ui: &mut egui::Ui) {
         egui::ComboBox::from_label("")
             .selected_text(format!("Scalar Field: {}", ide.field))
             .show_ui(ui, |ui| {
-                ui.selectable_value(&mut ide.field, "curve25519".to_string(), "curve25519");
-                ui.selectable_value(&mut ide.field, "alt_bn128".to_string(), "alt_bn128");
-                ui.selectable_value(&mut ide.field, "oxfoi".to_string(), "oxfoi");
+                if ui
+                    .selectable_value(&mut ide.field, "curve25519".to_string(), "curve25519")
+                    .changed()
+                    || ui
+                        .selectable_value(&mut ide.field, "alt_bn128".to_string(), "alt_bn128")
+                        .changed()
+                    || ui
+                        .selectable_value(&mut ide.field, "oxfoi".to_string(), "oxfoi")
+                        .changed()
+                {
+                    ide.compile_generic();
+                }
+            });
+        egui::ComboBox::from_label(" ")
+            .selected_text(format!("Target: {}", ide.target))
+            .show_ui(ui, |ui| {
+                if ui
+                    .selectable_value(&mut ide.target, "tasm".to_string(), "tasm")
+                    .changed()
+                    || ui
+                        .selectable_value(&mut ide.target, "r1cs".to_string(), "r1cs")
+                        .changed()
+                {
+                    ide.compile_generic();
+                }
             });
     });
 }

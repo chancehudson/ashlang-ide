@@ -13,7 +13,9 @@ use scalarff::FoiFieldElement;
 fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 800.0]),
+        // set a very large max height to fill the screen
+        // TODO: determine how this looks on Windows/Linux
+        viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 2_f32.powf(50.0)]),
         ..Default::default()
     };
     eframe::run_native(
@@ -190,23 +192,17 @@ fn render_build_options(ide: &mut IDE, ui: &mut egui::Ui) {
 }
 
 fn render_build_info(ide: &mut IDE, ui: &mut egui::Ui) {
-    ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
-        ui.vertical(|ui| {
-            ui.heading("Compile status");
-            egui::ScrollArea::vertical()
-                .id_source("compile_status_scroll")
-                .show(ui, |ui| {
-                    ui.colored_label(egui::Color32::WHITE, &ide.compile_result);
-                });
+    egui::ScrollArea::vertical()
+        .id_source("compile_output_scroll")
+        .show(ui, |ui| {
+            ui.vertical(|ui| {
+                ui.heading("Compile status");
+                ui.colored_label(egui::Color32::WHITE, &ide.compile_result);
+            });
+            ui.add(egui::Separator::default());
+            ui.vertical(|ui| {
+                ui.heading("Compile output");
+                ui.colored_label(egui::Color32::WHITE, &ide.compile_output);
+            });
         });
-        ui.add(egui::Separator::default());
-        ui.vertical(|ui| {
-            ui.heading("Compile output");
-            egui::ScrollArea::vertical()
-                .id_source("compile_output_scroll")
-                .show(ui, |ui| {
-                    ui.colored_label(egui::Color32::WHITE, &ide.compile_output);
-                });
-        });
-    });
 }

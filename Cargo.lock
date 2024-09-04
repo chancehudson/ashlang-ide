@@ -396,6 +396,7 @@ dependencies = [
 [[package]]
 name = "ashlang"
 version = "0.1.0"
+source = "git+https://github.com/chancehudson/ashlang.git#2b5bf1e3d2d0dfc6f3687c3a8d963d07a5606f07"
 dependencies = [
  "anyhow",
  "camino",

@@ -138,7 +138,7 @@ impl eframe::App for IDE {
                     });
                     // TODO: use layouter to implement syntax highlighting
                     ui.vertical(|ui| {
-                        let editor = egui::TextEdit::multiline(&mut self.source);
+                        let editor = egui::TextEdit::multiline(&mut self.source).lock_focus(true);
                         let size = egui::Vec2::new(
                             ui.available_width(),
                             ctx.screen_rect().height() - 200_f32,

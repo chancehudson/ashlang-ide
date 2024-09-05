@@ -9,6 +9,7 @@ use scalarff::Bn128FieldElement;
 use scalarff::Curve25519FieldElement;
 use scalarff::FieldElement;
 use scalarff::FoiFieldElement;
+use strip_ansi_escapes;
 
 fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
@@ -72,8 +73,8 @@ impl IDE {
         let mut compiler: Compiler<T> = compiler.unwrap();
         let program = compiler.compile_str(&self.source);
         if let Err(e) = program {
-            self.compile_result = format!("Failed to compile ar1cs: {:?}", e);
-            self.compile_output = "".to_string();
+            self.compile_result = format!("Failed to compile to {}: {}", self.target, strip_ansi_escapes::strip_str(&e.to_string()));
+        self.compile_output = "".to_string();
             return;
         }
         let program = program.unwrap();
@@ -192,17 +193,23 @@ fn render_build_options(ide: &mut IDE, ui: &mut egui::Ui) {
 }
 
 fn render_build_info(ide: &mut IDE, ui: &mut egui::Ui) {
-    egui::ScrollArea::vertical()
-        .id_source("compile_output_scroll")
-        .show(ui, |ui| {
-            ui.vertical(|ui| {
-                ui.heading("Compile status");
-                ui.colored_label(egui::Color32::WHITE, &ide.compile_result);
+    ui.vertical(|ui| {
+        ui.heading("Compile status");
+        egui::ScrollArea::vertical()
+            .id_source("compile_status_scroll")
+            .auto_shrink([false, true])
+            .show(ui, |ui| {
+                ui.colored_label(egui::Color32::BLACK, &ide.compile_result);
             });
-            ui.add(egui::Separator::default());
-            ui.vertical(|ui| {
-                ui.heading("Compile output");
-                ui.colored_label(egui::Color32::WHITE, &ide.compile_output);
+    });
+    ui.add(egui::Separator::default());
+    ui.vertical(|ui| {
+        ui.heading("Compile output");
+        egui::ScrollArea::vertical()
+            .id_source("compile_output_scroll")
+            .auto_shrink([false, true])
+            .show(ui, |ui| {
+                ui.colored_label(egui::Color32::BLACK, &ide.compile_output);
             });
-        });
+    });
 }

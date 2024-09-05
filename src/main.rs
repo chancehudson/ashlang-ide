@@ -73,8 +73,12 @@ impl IDE {
         let mut compiler: Compiler<T> = compiler.unwrap();
         let program = compiler.compile_str(&self.source);
         if let Err(e) = program {
-            self.compile_result = format!("Failed to compile to {}: {}", self.target, strip_ansi_escapes::strip_str(&e.to_string()));
-        self.compile_output = "".to_string();
+            self.compile_result = format!(
+                "Failed to compile to {}: {}",
+                self.target,
+                strip_ansi_escapes::strip_str(&e.to_string())
+            );
+            self.compile_output = "".to_string();
             return;
         }
         let program = program.unwrap();
@@ -199,7 +203,7 @@ fn render_build_info(ide: &mut IDE, ui: &mut egui::Ui) {
             .id_source("compile_status_scroll")
             .auto_shrink([false, true])
             .show(ui, |ui| {
-                ui.colored_label(egui::Color32::BLACK, &ide.compile_result);
+                ui.label(&ide.compile_result);
             });
     });
     ui.add(egui::Separator::default());
@@ -209,7 +213,7 @@ fn render_build_info(ide: &mut IDE, ui: &mut egui::Ui) {
             .id_source("compile_output_scroll")
             .auto_shrink([false, true])
             .show(ui, |ui| {
-                ui.colored_label(egui::Color32::BLACK, &ide.compile_output);
+                ui.label(&ide.compile_output);
             });
     });
 }

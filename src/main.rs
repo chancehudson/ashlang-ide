@@ -159,6 +159,9 @@ impl eframe::App for IDE {
                 render_build_info(self, ui);
             });
         });
+        egui::TopBottomPanel::bottom("bottom").show(ctx, |ui| {
+            egui::widgets::global_dark_light_mode_buttons(ui);
+        });
     }
 }
 

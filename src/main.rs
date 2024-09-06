@@ -85,7 +85,7 @@ impl IDE {
         match self.target.as_str() {
             "r1cs" => {
                 // build a witness and validate it if we're compiling for r1cs
-                let witness = witness::build::<T>(&program);
+                let witness = witness::build::<T>(&program, vec![]);
                 if let Err(e) = witness {
                     self.compile_result = format!("Failed to build witness: {:?}", e);
                     self.compile_output = "".to_string();
@@ -120,6 +120,10 @@ impl Default for IDE {
             source: "let x = 0
 let y = 1
 let _ = x + y
+
+let z = [0]
+
+_ = z[0] * x
 "
             .to_string(),
             compile_result: "".to_string(),

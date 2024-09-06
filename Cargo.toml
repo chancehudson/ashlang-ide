@@ -6,11 +6,35 @@ edition = "2021"
 [dependencies]
 eframe = { version = "0.28.1", features = ["default", "__screenshot"] }
 egui_extras = { version = "0.28.1", features = ["default", "image"] }
-env_logger = { version = "0.11.5", default-features = false, features = ["auto-color", "humantime"] }
 
-#ashlang = { path = "../ashlang" }
-ashlang = { git = "https://github.com/chancehudson/ashlang.git" }
-scalarff = "0.2.2"
-#scalarff = { path = "../scalarff" }
 anyhow = "1.0.86"
 strip-ansi-escapes = "0.2.0"
+vfs = "0.12.0"
+log = "0.4"
+
+scalarff = "0.3.0"
+#scalarff = { path = "../scalarff" }
+
+# native:
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+getrandom = { version = "0.2" }
+env_logger = { version = "0.11.5", default-features = false, features = ["auto-color", "humantime"] }
+#ashlang = { path = "../ashlang" }
+ashlang = { git = "https://github.com/chancehudson/ashlang.git" }
+
+# web:
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+wasm-bindgen-futures = "0.4"
+#ashlang = { path = "../ashlang", default-features = false, features = ["spartan-prover"] }
+ashlang = { git = "https://github.com/chancehudson/ashlang.git", default-features = false, features = ["spartan-prover"] }
+
+# to access the DOM (to hide the loading text)
+[target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
+# HACK: pin web-sys to <0.3.70 until a new `eframe` is released containing
+# the following PR: https://github.com/emilk/egui/pull/4980
+version = ">= 0.3.4, < 0.3.70"
+
+# Optimize all dependencies even in debug builds:
+[profile.dev.package."*"]
+opt-level = 2

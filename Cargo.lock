@@ -402,7 +402,7 @@ dependencies = [
 [[package]]
 name = "ashlang"
 version = "0.1.0"
-source = "git+https://github.com/chancehudson/ashlang.git#66e1a9f22c3c957fc569a4a029cee3128f2eaccf"
+source = "git+https://github.com/chancehudson/ashlang.git#1986c58c1376838a4b5e66516d420a4805e82112"
 dependencies = [
  "anyhow",
  "camino",
@@ -3586,9 +3586,9 @@ dependencies = [
 
 [[package]]
 name = "scalarff"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c4e4d2f0741d0da7747002eaf407fcdf329ae6b1e0e9aebfc84c099365a8efd"
+checksum = "eca8c1197bac62f30cb4baff36f3e9b413df5eeab98e3b63e8d4db83200e4d93"
 dependencies = [
  "anyhow",
  "ark-bn254",

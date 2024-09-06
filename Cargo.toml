@@ -12,7 +12,7 @@ strip-ansi-escapes = "0.2.0"
 vfs = "0.12.0"
 log = "0.4"
 
-scalarff = "0.3.0"
+scalarff = "0.3.1"
 #scalarff = { path = "../scalarff" }
 
 # native:

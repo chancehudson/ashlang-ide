@@ -1,6 +1,4 @@
-
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
-#![allow(rustdoc::missing_crate_level_docs)] // it's an example
+use std::collections::HashMap;
 
 use ashlang::compiler::Compiler;
 use ashlang::r1cs::witness;
@@ -18,21 +16,46 @@ pub struct IDE {
     compile_result: String,
     compile_output: String,
     source: String, // the source code being edited
+    fs: HashMap<String, String>,
+    active_file: String,
+}
+
+impl Default for IDE {
+    fn default() -> Self {
+        let fs = super::fs::init();
+        if let Err(e) = fs {
+            panic!("Failed to initialize filesystem: {:?}", e);
+        }
+        let active_file = "entry.ash".to_string();
+        let fs = fs.unwrap();
+        let source = fs.get(&active_file).unwrap().clone();
+        let mut s = Self {
+            active_file,
+            fs,
+            target: "r1cs".to_string(),
+            source,
+            compile_result: "".to_string(),
+            compile_output: "".to_string(),
+            field: "oxfoi".to_string(),
+        };
+        s.compile_generic();
+        s
+    }
 }
 
 impl IDE {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-            // This is also where you can customize the look and feel of egui using
-            // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
+        // This is also where you can customize the look and feel of egui using
+        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
 
-            // Load previous app state (if any).
-            // Note that you must enable the `persistence` feature for this to work.
-            // if let Some(storage) = cc.storage {
-            //     return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
-            // }
+        // Load previous app state (if any).
+        // Note that you must enable the `persistence` feature for this to work.
+        // if let Some(storage) = cc.storage {
+        //     return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+        // }
 
-            Default::default()
-        }
+        Default::default()
+    }
 
     fn compile_generic(&mut self) {
         if self.target == "tasm" && self.field != "oxfoi" {
@@ -50,13 +73,22 @@ impl IDE {
     }
 
     fn compile<T: FieldElement>(&mut self) {
+        self.fs
+            .insert(self.active_file.clone(), self.source.clone());
+        let extension_priorities = if self.target == "tasm" {
+            vec!["ash".to_string(), "tasm".to_string()]
+        } else if self.target == "r1cs" {
+            vec!["ash".to_string(), "ar1cs".to_string()]
+        } else {
+            vec!["ash".to_string()]
+        };
         let compiler = Compiler::new(&Config {
             include_paths: vec![],
             verbosity: 0,
             inputs: vec![],
             secret_inputs: vec![],
             target: self.target.clone(),
-            extension_priorities: vec!["ash".to_string()],
+            extension_priorities,
             entry_fn: "entry".to_string(),
             field: self.field.clone(),
         });
@@ -65,7 +97,8 @@ impl IDE {
             return;
         }
         let mut compiler: Compiler<T> = compiler.unwrap();
-        let program = compiler.compile_str(&self.source);
+        compiler.include_vfs(&self.fs).unwrap();
+        let program = compiler.compile("entry");
         if let Err(e) = program {
             self.compile_result = format!(
                 "Failed to compile to {}: {}",
@@ -107,36 +140,22 @@ impl IDE {
     }
 }
 
-impl Default for IDE {
-    fn default() -> Self {
-        let mut s = Self {
-            target: "r1cs".to_string(),
-            source: "let x = 0
-let y = 1
-let _ = x + y
-
-let z = [0]
-
-_ = z[0] * x
-"
-            .to_string(),
-            compile_result: "".to_string(),
-            compile_output: "".to_string(),
-            field: "curve25519".to_string(),
-        };
-        s.compile_generic();
-        s
-    }
-}
-
 impl eframe::App for IDE {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.with_layout(egui::Layout::top_down(egui::Align::LEFT), |ui| {
                 ui.horizontal(|ui| {
                     ui.vertical(|ui| {
-                        for i in 0..10 {
-                            ui.label(&format!("ahfjksahfsakhf {i}"));
+                        for (filename, _) in &self.fs {
+                            let label = if self.active_file == filename.to_string() {
+                                ui.label(&format!("> {filename}"))
+                            } else {
+                                ui.label(filename)
+                            };
+                            if label.clicked() {
+                                self.active_file = filename.clone();
+                                self.source = self.fs.get(&self.active_file).unwrap().clone();
+                            }
                         }
                     });
                     // TODO: use layouter to implement syntax highlighting
@@ -144,7 +163,7 @@ impl eframe::App for IDE {
                         let editor = egui::TextEdit::multiline(&mut self.source).lock_focus(true);
                         let size = egui::Vec2::new(
                             ui.available_width(),
-                            ctx.screen_rect().height() - 200_f32,
+                            ctx.screen_rect().height() - 400_f32,
                         );
                         let editor = ui.add_sized(size, editor);
                         if editor.changed() {

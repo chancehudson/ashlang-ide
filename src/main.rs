@@ -4,6 +4,7 @@
 use eframe::egui;
 
 mod app;
+mod fs;
 use app::IDE;
 
 #[cfg(not(target_arch = "wasm32"))]

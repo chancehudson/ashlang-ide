@@ -70,9 +70,6 @@ let a5 = pow5(124)
 assert_eq(a5, 29316250624)
 
 # click on pow5.ash on the left to see the implementation
-
-
-# try changing the target below
 "
         .to_string(),
     );

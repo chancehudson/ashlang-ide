@@ -148,9 +148,11 @@ impl eframe::App for IDE {
                     ui.vertical(|ui| {
                         for (filename, _) in &self.fs {
                             let label = if self.active_file == filename.to_string() {
-                                ui.label(&format!("> {filename}"))
+                                let res = ui.label(&format!("> {filename}"));
+                                res.on_hover_cursor(egui::CursorIcon::PointingHand)
                             } else {
-                                ui.label(filename)
+                                let res = ui.label(filename);
+                                res.on_hover_cursor(egui::CursorIcon::PointingHand)
                             };
                             if label.clicked() {
                                 self.active_file = filename.clone();
@@ -177,7 +179,12 @@ impl eframe::App for IDE {
             });
         });
         egui::TopBottomPanel::bottom("bottom").show(ctx, |ui| {
-            egui::widgets::global_dark_light_mode_buttons(ui);
+            ui.horizontal(|ui| {
+                egui::widgets::global_dark_light_mode_buttons(ui);
+                if ui.ui_contains_pointer() {
+                    ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+                }
+            });
         });
     }
 }
@@ -199,6 +206,9 @@ fn render_build_options(ide: &mut IDE, ui: &mut egui::Ui) {
                 {
                     ide.compile_generic();
                 }
+                if ui.ui_contains_pointer() {
+                    ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+                }
             });
         egui::ComboBox::new("target_selector", "")
             .selected_text(format!("Target: {}", ide.target))
@@ -212,7 +222,13 @@ fn render_build_options(ide: &mut IDE, ui: &mut egui::Ui) {
                 {
                     ide.compile_generic();
                 }
+                if ui.ui_contains_pointer() {
+                    ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+                }
             });
+        if ui.ui_contains_pointer() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+        }
     });
 }
 
